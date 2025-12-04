@@ -1,0 +1,43 @@
+name: Fetch Static Secrets (API Key)
+
+on:
+  push:
+
+jobs:
+  fetch_secrets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch static secrets from Akeyless
+        id: fetch-secrets
+        uses: akeyless-community/akeyless-github-action@v1.1.2
+        with:
+          # ---- Authentication (API Key) ----
+          access-id: ${{ secrets.ACCESS_ID }}
+          access-type: access_key
+          access-key: ${{ secrets.ACCESS_KEY }}
+
+          # ---- Endpoint (GLOBAL) ----
+          api-url: "https://csm.thalescryptolabs.com/akeyless-api/v2/"
+
+          # ---- Export behavior ----
+          export-secrets-to-outputs: true
+          export-secrets-to-environment: true
+
+          # ---- Static secrets list (YAML list in a block scalar) ----
+          static-secrets: |
+            - name: "/test"
+              output-name: "MY_FIRST_SECRET"
+
+      - name: Use secret from environment
+        env:
+          SECRET: ${{ env.MY_FIRST_SECRET }}
+        run: |
+          echo "Secret length: ${#SECRET}"
+
+      - name: Use secret from step outputs
+        run: |
+          echo "Masked secret from outputs: ${{ steps.fetch-secrets.outputs.MY_FIRST_SECRET }}"
