@@ -1,0 +1,40 @@
+name: Fetch Static Secrets example
+
+on:
+  push:
+
+jobs:
+  fetch_secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Fetch static secrets from Akeyless
+        id: fetch-secrets
+        uses: akeyless-community/akeyless-github-action@v1.0.1
+        with:
+          access-id: ${{ secrets.ACCESS_ID }}
+          access-type: jwt
+
+          # ✅ api-url belongs here at the "with:" level (GLOBAL), not inside static-secrets
+          api-url: "https://csm.thalescryptolabs.com/akeyless-api/v2/"
+
+          export-secrets-to-outputs: true
+          export-secrets-to-environment: true
+
+          # ✅ Only list items here: name, output-name, (optionally) key for JSON-formatted secrets
+          static-secrets: |
+            - name: "/test"
+              output-name: "my_first_secret"
+
+      - name: Use Akeyless secret (environment variable)
+        env:
+          SECRET: ${{ env.my_first_secret }}
+        run: |
+          echo "Secret length: ${#SECRET}"
+
+      - name: Use Akeyless secret (step output)
+        run: |
+          echo "Secret length from outputs: ${{ steps.fetch-secrets.outputs.my_first_secret && steps.fetch-secrets.outputs.my_first_secret.length }}"
