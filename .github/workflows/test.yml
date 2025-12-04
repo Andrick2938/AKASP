@@ -1,0 +1,44 @@
+name: Akeyless Login Diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Uncomment if testing OIDC:
+  # id-token: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Optional: turn on runner-level debug for this job only
+      - name: Enable step debug (scoped)
+        run: |
+          echo "ACTIONS_RUNNER_DEBUG=true" >> $GITHUB_ENV
+          echo "ACTIONS_STEP_DEBUG=true" >> $GITHUB_ENV
+        # Note: Enabling debug can increase log verbosity. Avoid printing secrets.
+
+      - name: Attempt login + fetch (access_key)
+        id: akeyless
+        continue-on-error: true
+        uses: akeyless-community/akeyless-github-action@v1.1.2
+        with:
+          access-type: access_key
+          access-id:  ${{ secrets.ACCESS_ID }}
+          access-key: ${{ secrets.ACCESS_KEY }}
+          api-url: "https://csm.thalescryptolabs.com/akeyless-api/v2/"
+          export-secrets-to-outputs: false
+          export-secrets-to-environment: false
+          static-secrets: |
+            - name: "/test"
+              output-name: "IGNORED"
+
+      - name: Report status
+        if: steps.akeyless.outcome != 'success'
+        run: |
+          echo "Akeyless Action failed with conclusion: ${{ steps.akeyless.outcome }}"
+          echo "Please check the previous step logs for the exact error message."
